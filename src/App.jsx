@@ -25,11 +25,12 @@ const Navbar = ({ cartCount }) => {
   return (
     <nav className="navbar">
       <div className="container nav-container">
-        <a href={import.meta.env.BASE_URL} className="logo">
+        <Link to="/" reloadDocument className="logo">
           🍵 Thưởng Trà Quán
-        </a>
+        </Link>
         <div className={`nav-links ${isOpen ? 'show' : ''}`}>
-          <a href={import.meta.env.BASE_URL} className={isActive('/')}>Trang chủ</a>
+          <Link to="/" reloadDocument className={isActive('/')}>Trang chủ</Link>
+
 
 
           <Link to="/products" className={isActive('/products')}>Danh mục</Link>
