@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Search, Menu, User } from 'lucide-react';
 import Home from './pages/Home';
 import Products from './pages/Products';
@@ -14,9 +14,19 @@ import Policies from './pages/Policies';
 import PromoPopup from './components/PromoPopup';
 import './index.css';
 
-const Navbar = ({ cartCount }) => {
+const Navbar = ({ cartCount, triggerPromo }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleHomeClick = (e) => {
+    e.preventDefault();
+    if (location.pathname !== '/') {
+      navigate('/');
+    }
+    triggerPromo();
+    setIsOpen(false);
+  };
 
   const isActive = (path) => {
     return location.pathname === path ? 'active' : '';
@@ -25,14 +35,11 @@ const Navbar = ({ cartCount }) => {
   return (
     <nav className="navbar">
       <div className="container nav-container">
-        <Link to="/" reloadDocument className="logo">
+        <Link to="/" onClick={handleHomeClick} className="logo">
           🍵 Thưởng Trà Quán
         </Link>
         <div className={`nav-links ${isOpen ? 'show' : ''}`}>
-          <Link to="/" reloadDocument className={isActive('/')}>Trang chủ</Link>
-
-
-
+          <Link to="/" onClick={handleHomeClick} className={isActive('/')}>Trang chủ</Link>
           <Link to="/products" className={isActive('/products')}>Danh mục</Link>
           <Link to="/about" className={isActive('/about')}>Câu chuyện</Link>
           <Link to="/blog" className={isActive('/blog')}>Kiến thức</Link>
@@ -72,6 +79,7 @@ const Navbar = ({ cartCount }) => {
   );
 };
 
+
 const Footer = () => (
   <footer>
     <div className="container">
@@ -109,6 +117,7 @@ const Footer = () => (
 
 export default function App() {
   const [cartItems, setCartItems] = useState([]);
+  const [promoKey, setPromoKey] = useState(0);
 
   const addToCart = (product, quantity = 1) => {
     const existing = cartItems.find(item => item.id === product.id);
@@ -123,9 +132,10 @@ export default function App() {
 
   return (
     <Router>
-      <PromoPopup />
-      <Navbar cartCount={cartCount} />
+      <PromoPopup key={promoKey} />
+      <Navbar cartCount={cartCount} triggerPromo={() => setPromoKey(prev => prev + 1)} />
       <div style={{minHeight: '80vh'}}>
+
         <Routes>
           <Route path="/" element={<Home addToCart={addToCart} />} />
           <Route path="/products" element={<Products addToCart={addToCart} />} />
