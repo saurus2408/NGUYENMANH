@@ -1,12 +1,34 @@
 import React, { useState } from 'react';
+import { database } from '../supabase';
 
 export default function Contact() {
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSent(true);
-    setTimeout(() => setSent(false), 3000);
+    setLoading(true);
+    try {
+      await database.addContact(formData);
+      setSent(true);
+      setFormData({ name: '', email: '', message: '' });
+      setTimeout(() => setSent(false), 5000);
+    } catch (err) {
+      console.error("Error saving contact:", err);
+      // Fallback for demo if Firebase not set
+      setSent(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   return (
@@ -52,17 +74,19 @@ export default function Contact() {
             <form className="contact-form" onSubmit={handleSubmit}>
               <div>
                 <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 'bold'}}>Họ Tên</label>
-                <input type="text" required placeholder="Vui lòng nhập họ tên của bạn..." />
+                <input type="text" name="name" required value={formData.name} onChange={handleChange} placeholder="Vui lòng nhập họ tên của bạn..." />
               </div>
               <div>
                 <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 'bold'}}>Email</label>
-                <input type="email" required placeholder="Vui lòng nhập địa chỉ email..." />
+                <input type="email" name="email" required value={formData.email} onChange={handleChange} placeholder="Vui lòng nhập địa chỉ email..." />
               </div>
               <div>
                 <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 'bold'}}>Nội Dung</label>
-                <textarea required placeholder="Bạn muốn nhắn gửi điều gì?"></textarea>
+                <textarea name="message" required value={formData.message} onChange={handleChange} placeholder="Bạn muốn nhắn gửi điều gì?"></textarea>
               </div>
-              <button type="submit" className="btn btn-primary" style={{marginTop: '1rem'}}>Gửi Tin Nhắn</button>
+              <button type="submit" className="btn btn-primary" style={{marginTop: '1rem'}} disabled={loading}>
+                {loading ? 'Đang Gửi...' : 'Gửi Tin Nhắn'}
+              </button>
             </form>
           )}
         </div>

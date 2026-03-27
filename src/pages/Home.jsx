@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { products, formatPrice } from '../data';
+import { formatPrice } from '../data';
 
 const ProductCard = ({ product, addToCart }) => (
   <div className="product-card">
@@ -18,15 +18,15 @@ const ProductCard = ({ product, addToCart }) => (
   </div>
 );
 
-export default function Home({ addToCart }) {
+export default function Home({ products, addToCart }) {
   const bestsellers = products.filter(p => p.bestseller);
 
   return (
     <div>
       <section className="hero" style={{backgroundImage: "url('https://images.unsplash.com/photo-1594631252845-29fc4cc8cbf9?auto=format&fit=crop&q=80&w=1600')"}}>
         <div className="hero-content">
-          <h1>Tinh Hoa Trà Việt</h1>
-          <p>Hương vị ngàn năm đọng lại trong từng giọt tinh khiết. Đắm chìm trong nghệ thuật thưởng trà cùng những dòng trà thượng hạng nhất.</p>
+          <h1>Trà Búp Tuấn Hiền</h1>
+          <p>Tinh hoa trà xanh Thái Nguyên - Sạch và An toàn từ tâm người làm trà gia truyền.</p>
           <Link to="/products" className="btn btn-accent" style={{fontSize: '1.2rem', padding: '15px 35px'}}>Khám Phá Ngay</Link>
         </div>
       </section>
