@@ -3,7 +3,7 @@ import { formatPrice } from '../data';
 import { 
   Edit2, Save, Trash2, Plus, 
   Package, ShoppingCart, MessageSquare, 
-  LogOut, CheckCircle, Truck, X, BookOpen
+  LogOut, CheckCircle, Truck, X, BookOpen, Star
 } from 'lucide-react';
 import { database, supabase } from '../supabase';
 import { products as initialProducts } from '../data';
@@ -23,11 +23,12 @@ const Admin = () => {
   const [orders, setOrders] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   
   // Edit State
   const [showEditForm, setShowEditForm] = useState(false);
   const [editForm, setEditForm] = useState(null);
-  const [editType, setEditType] = useState('product'); // 'product' or 'blog'
+  const [editType, setEditType] = useState('product'); // 'product', 'blog', or 'promo'
 
   useEffect(() => {
     const localAuth = localStorage.getItem('adminAuth') === 'true';
@@ -42,17 +43,19 @@ const Admin = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [p, o, c, b] = await Promise.all([
+      const [p, o, c, b, pr] = await Promise.all([
         database.getProducts(),
         database.getOrders(),
         database.getContacts(),
-        database.getBlogPosts()
+        database.getBlogPosts(),
+        database.getPromotions().catch(() => [])
       ]);
       
       setProducts(p);
       setOrders(o);
       setContacts(c);
       setBlogPosts(b);
+      setPromotions(pr);
     } catch (err) {
       console.log("Database fetch error", err);
     } finally {
@@ -93,9 +96,12 @@ const Admin = () => {
         }
         await database.updateProduct(id, finalUpdates);
         setProducts(products.map(p => p.id === id ? { ...p, ...finalUpdates } : p));
-      } else {
+      } else if (editType === 'blog') {
         await database.updateBlogPost(id, updates);
         setBlogPosts(blogPosts.map(b => b.id === id ? { ...b, ...updates } : b));
+      } else if (editType === 'promo') {
+        await database.updatePromotion(id, updates);
+        setPromotions(promotions.map(p => p.id === id ? { ...p, ...updates } : p));
       }
       setShowEditForm(false);
       alert('Đã cập nhật thành công!');
@@ -110,9 +116,12 @@ const Admin = () => {
         if (type === 'product') {
           await database.deleteProduct(id);
           setProducts(products.filter(p => p.id !== id));
-        } else {
+        } else if (type === 'blog') {
           await database.deleteBlogPost(id);
           setBlogPosts(blogPosts.filter(b => b.id !== id));
+        } else if (type === 'promo') {
+          await database.deletePromotion(id);
+          setPromotions(promotions.filter(p => p.id !== id));
         }
       } catch (err) {
         console.error(err);
@@ -128,9 +137,9 @@ const Admin = () => {
       stock: 100,
       image: "https://images.unsplash.com/photo-1594631252845-29fc4cc8cbf9?auto=format&fit=crop&q=80&w=800",
       description: 'Mô tả chi tiết...',
-      origin: 'Hà Giang',
+      origin: 'Thái Nguyên',
       bestseller: false,
-      brewing: '85-90°C',
+      originalPrice: 300000,
       health_benefits: [],
       rating: 5.0,
       reviews: 0
@@ -140,6 +149,36 @@ const Admin = () => {
       setProducts([added, ...products]);
       openEditForm(added, 'product');
     } catch (err) { alert(err.message); }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const uploadingAlert = alert('Đang tải ảnh lên... Vui lòng không đóng cửa sổ.');
+    try {
+      // Create safe filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `product_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Giả sử họ dùng bucket tên "images" (phổ biến)
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      // Get Public URL
+      const { data } = supabase.storage
+        .from('images')
+        .getPublicUrl(fileName);
+
+      setEditForm(prev => ({ ...prev, image: data.publicUrl }));
+      alert('Tải ảnh thành công!');
+    } catch (err) {
+      console.error(err);
+      alert('Lỗi tải ảnh: Bạn đã tạo Bucket "images" và set quyền Public ở Supabase chưa? Lỗi chi tiết: ' + err.message);
+    }
   };
 
   const handleAddBlog = async () => {
@@ -155,6 +194,23 @@ const Admin = () => {
       setBlogPosts([added, ...blogPosts]);
       openEditForm(added, 'blog');
     } catch (err) { alert(err.message); }
+  };
+
+  const handleAddPromo = async () => {
+    const newPromo = {
+      title: 'Khuyến Mãi Mới',
+      description: 'Mô tả chương trình...',
+      image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=800',
+      badge: 'Giảm 20%',
+      is_active: false
+    };
+    try {
+      const added = await database.addPromotion(newPromo);
+      setPromotions([added, ...promotions]);
+      openEditForm(added, 'promo');
+    } catch (err) { 
+      alert("Lỗi: Bạn cần tạo bảng 'promotions' trong Supabase SQL Editor trước nhé! Vui lòng làm theo hướng dẫn màu xanh ở màn hình chat."); 
+    }
   };
 
   if (!isAuthenticated) {
@@ -190,6 +246,7 @@ const Admin = () => {
           <button onClick={() => setActiveTab('products')} style={{padding: '8px 20px', borderRadius: '8px', border: 'none', background: activeTab === 'products' ? 'var(--primary)' : 'transparent', color: activeTab === 'products' ? 'white' : 'black', cursor: 'pointer', whiteSpace: 'nowrap'}}><Package size={18} style={{verticalAlign: 'middle', marginRight: '5px'}}/> Sản Phẩm</button>
           <button onClick={() => setActiveTab('blog')} style={{padding: '8px 20px', borderRadius: '8px', border: 'none', background: activeTab === 'blog' ? 'var(--primary)' : 'transparent', color: activeTab === 'blog' ? 'white' : 'black', cursor: 'pointer', whiteSpace: 'nowrap'}}><BookOpen size={18} style={{verticalAlign: 'middle', marginRight: '5px'}}/> Kiến thức trà</button>
           <button onClick={() => setActiveTab('orders')} style={{padding: '8px 20px', borderRadius: '8px', border: 'none', background: activeTab === 'orders' ? 'var(--primary)' : 'transparent', color: activeTab === 'orders' ? 'white' : 'black', cursor: 'pointer', whiteSpace: 'nowrap'}}><ShoppingCart size={18} style={{verticalAlign: 'middle', marginRight: '5px'}}/> Đơn Hàng</button>
+          <button onClick={() => setActiveTab('promos')} style={{padding: '8px 20px', borderRadius: '8px', border: 'none', background: activeTab === 'promos' ? 'var(--primary)' : 'transparent', color: activeTab === 'promos' ? 'white' : 'black', cursor: 'pointer', whiteSpace: 'nowrap'}}><Star size={18} style={{verticalAlign: 'middle', marginRight: '5px'}}/> Quảng Cáo Popup</button>
           <button onClick={() => setActiveTab('contacts')} style={{padding: '8px 20px', borderRadius: '8px', border: 'none', background: activeTab === 'contacts' ? 'var(--primary)' : 'transparent', color: activeTab === 'contacts' ? 'white' : 'black', cursor: 'pointer', whiteSpace: 'nowrap'}}><MessageSquare size={18} style={{verticalAlign: 'middle', marginRight: '5px'}}/> Liên Hệ</button>
         </div>
         <button onClick={handleLogout} className="btn btn-outline" style={{borderRadius: '10px', color: '#dc3545', borderColor: '#dc3545'}}><LogOut size={18}/></button>
@@ -256,25 +313,97 @@ const Admin = () => {
             </div>
           )}
 
+          {activeTab === 'promos' && (
+            <div>
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '2rem'}}>
+                <h2 style={{color: 'var(--primary)'}}>Quản lý Quảng Cáo Popup</h2>
+                <button className="btn btn-primary" onClick={handleAddPromo} style={{borderRadius: '10px'}}><Plus size={18}/> Tạo Mẫu Mới</button>
+              </div>
+              <p style={{marginBottom: '20px', color: '#666'}}>Chỉ hiển thị 1 mẫu Quảng cáo được bật (Active) tại Trang Chủ.</p>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem'}}>
+                {promotions.map(promo => (
+                  <div key={promo.id} style={{background: 'white', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', border: promo.is_active ? '2px solid var(--primary)' : '2px solid transparent'}}>
+                    <div style={{position: 'relative'}}>
+                      <img src={promo.image} style={{width: '100%', height: '150px', objectFit: 'cover', opacity: promo.is_active ? 1 : 0.6}} />
+                      {promo.is_active && <span style={{position: 'absolute', top: '10px', left: '10px', background: 'var(--accent)', color: 'white', padding: '5px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold'}}>ĐANG HIỂN THỊ</span>}
+                    </div>
+                    <div style={{padding: '1.2rem', opacity: promo.is_active ? 1 : 0.6}}>
+                      <h4 style={{marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--primary)'}}>{promo.title}</h4>
+                      <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '10px'}}>{promo.badge}</p>
+                      <button 
+                        onClick={async () => {
+                           try {
+                             if (!promo.is_active) {
+                               // Tat ca cac muc khac
+                               await Promise.all(promotions.filter(p => p.is_active).map(p => database.updatePromotion(p.id, { is_active: false })));
+                             }
+                             await database.updatePromotion(promo.id, { is_active: !promo.is_active });
+                             setPromotions(promotions.map(p => p.id === promo.id ? { ...p, is_active: !promo.is_active } : (promo.is_active ? p : { ...p, is_active: false })));
+                           } catch (err) { alert('Lỗi: ' + err.message); }
+                        }}
+                        style={{width: '100%', padding: '10px', borderRadius: '8px', border: promo.is_active ? '1px solid #ddd' : 'none', background: promo.is_active ? '#f5f5f5' : 'var(--primary)', color: promo.is_active ? '#333' : 'white', cursor: 'pointer', marginBottom: '15px', fontWeight: 'bold'}}
+                      >
+                         {promo.is_active ? 'TẮT HIỂN THỊ' : 'CHỌN HIỂN THỊ'}
+                      </button>
+                      <div style={{display: 'flex', justifyContent: 'center', gap: '20px', borderTop: '1px solid #eee', paddingTop: '15px'}}>
+                         <button onClick={() => openEditForm(promo, 'promo')} className="btn-icon" style={{display: 'flex', alignItems: 'center', gap: '5px'}}><Edit2 size={16}/> Sửa</button>
+                         <button onClick={() => handleDelete(promo.id, 'promo')} className="btn-icon" style={{color: '#dc3545', display: 'flex', alignItems: 'center', gap: '5px'}}><Trash2 size={16}/> Xóa</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'orders' && (
             <div>
-              <h2 style={{marginBottom: '2rem'}}>Đơn Hàng Mới</h2>
+              <h2 style={{marginBottom: '2rem'}}>Quản Lý Đơn Hàng</h2>
               <div style={{display: 'grid', gap: '1rem'}}>
                 {orders.length === 0 ? <p>Chưa có đơn hàng nào.</p> : orders.map(o => (
                   <div key={o.id} style={{background: 'white', padding: '1.5rem', borderRadius: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 5px 15px rgba(0,0,0,0.05)'}}>
                     <div>
-                      <strong>{o.name}</strong> - <span>{o.phone}</span>
+                      <strong>{o.name}</strong> - <span style={{color: 'var(--primary)', fontWeight: 600}}>{o.phone}</span>
                       <p style={{margin: '5px 0', fontSize: '0.85rem', color: '#666'}}>{o.address}</p>
-                      <p style={{fontSize: '0.8rem', color: '#999'}}>Món đã đặt: {o.items?.map(it => `${it.name} (x${it.quantity})`).join(', ')}</p>
-                      <span style={{fontSize: '0.75rem', padding: '3px 8px', borderRadius: '5px', background: o.status === 'paid' ? '#e8f5e9' : '#fff3e0', color: o.status === 'paid' ? '#2e7d32' : '#ef6c00'}}>
-                        {o.status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
-                      </span>
+                      <p style={{fontSize: '0.85rem', color: '#444'}}>Món đã đặt: <strong>{o.items?.map(it => `${it.name} (x${it.quantity})`).join(', ')}</strong></p>
+                      <div style={{marginTop: '8px', display: 'inline-block', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', background: o.payment_mode === 'bank_transfer' ? '#e3f2fd' : '#fff3e0', color: o.payment_mode === 'bank_transfer' ? '#1976d2' : '#f57c00'}}>
+                        {o.payment_mode === 'bank_transfer' ? '💳 Yêu cầu TT Qua Ngân hàng' : '💵 Yêu cầu TT Trực tiếp (COD)'}
+                      </div>
                     </div>
                     <div style={{textAlign: 'right'}}>
-                      <p style={{color: 'var(--accent)', fontWeight: 'bold'}}>{formatPrice(o.total)}</p>
-                      <div style={{display: 'flex', gap: '8px', marginTop: '10px', justifyContent: 'flex-end'}}>
-                         {o.status === 'pending' && <button className="btn-icon" onClick={() => database.updateOrderStatus(o.id, 'shipping')}><Truck size={18}/></button>}
-                         {o.status !== 'completed' && <button className="btn-icon" onClick={() => database.updateOrderStatus(o.id, 'completed')}><CheckCircle size={18}/></button>}
+                      <p style={{color: 'var(--accent)', fontWeight: 'bold', fontSize: '1.3rem', marginBottom: '10px'}}>{formatPrice(o.total)}</p>
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end'}}>
+                         <select 
+                           value={o.status || 'pending'} 
+                           onChange={async (e) => {
+                             const newStatus = e.target.value;
+                             try {
+                               await database.updateOrderStatus(o.id, newStatus);
+                               setOrders(orders.map(order => order.id === o.id ? { ...order, status: newStatus } : order));
+                             } catch (err) { alert('Lỗi cập nhật: ' + err.message); }
+                           }}
+                           style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.9rem', outline: 'none', background: '#f8f9fa', cursor: 'pointer', fontWeight: 600, color: 'var(--primary)' }}
+                         >
+                           <option value="pending">⏳ Chờ xử lý</option>
+                           <option value="paid">✅ Đã nhận tiền (Bank)</option>
+                           <option value="confirmed">📦 Đã xác nhận đơn</option>
+                           <option value="shipping">🚚 Đang vận chuyển</option>
+                           <option value="shipped">🎉 Giao thành công</option>
+                         </select>
+                         <button 
+                           onClick={async () => {
+                             if(window.confirm('Xác nhận xóa vĩnh viễn đơn hàng này?')) {
+                               try {
+                                 await database.deleteOrder(o.id);
+                                 setOrders(orders.filter(order => order.id !== o.id));
+                               } catch (err) { alert('Lỗi xóa: ' + err.message); }
+                             }
+                           }} 
+                           style={{ border: 'none', background: '#ffeeee', color: '#dc3545', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                           title="Xóa đơn"
+                         >
+                           <Trash2 size={16}/>
+                         </button>
                       </div>
                     </div>
                   </div>
@@ -311,19 +440,53 @@ const Admin = () => {
                  <>
                    <div className="form-group"><label>Tên:</label><input value={editForm.name} onChange={(e) => setEditForm({...editForm, name: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
                    <div className="form-group"><label>Loại:</label><select value={editForm.type} onChange={(e) => setEditForm({...editForm, type: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}><option value="Chè">Chè</option><option value="Kẹo Lạc">Kẹo Lạc</option></select></div>
-                   <div className="form-group"><label>Giá (VNĐ):</label><input type="number" value={editForm.price} onChange={(e) => setEditForm({...editForm, price: parseInt(e.target.value)})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
+                   <div className="form-group"><label>Giá gốc (VNĐ):</label><input type="number" value={editForm.originalPrice || ''} onChange={(e) => setEditForm({...editForm, originalPrice: parseInt(e.target.value)})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}} placeholder="Ví dụ: 300000"/></div>
+                   <div className="form-group"><label>Giá bán (VNĐ):</label><input type="number" value={editForm.price} onChange={(e) => setEditForm({...editForm, price: parseInt(e.target.value)})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
                    <div className="form-group"><label>Tồn kho:</label><input type="number" value={editForm.stock} onChange={(e) => setEditForm({...editForm, stock: parseInt(e.target.value)})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
-                   <div className="form-group" style={{gridColumn: '1 / span 2'}}><label>URL Ảnh:</label><input value={editForm.image} onChange={(e) => setEditForm({...editForm, image: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
+                   <div className="form-group"><label>Nguồn gốc:</label><input value={editForm.origin || 'Thái Nguyên'} onChange={(e) => setEditForm({...editForm, origin: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
+                   <div className="form-group" style={{gridColumn: '1 / span 2', display: 'flex', alignItems: 'center', gap: '10px', background: '#f5fff5', padding: '12px 15px', borderRadius: '8px', border: '1px dashed var(--primary)'}}>
+                     <input type="checkbox" checked={editForm.bestseller || false} onChange={(e) => setEditForm({...editForm, bestseller: e.target.checked})} style={{width: '22px', height: '22px', accentColor: 'var(--primary)', cursor: 'pointer'}} id="bestseller-check" />
+                     <label htmlFor="bestseller-check" style={{fontWeight: 'bold', color: 'var(--primary)', cursor: 'pointer', margin: 0}}>🌟 Đánh dấu "Sản phẩm nổi bật" (Sẽ hiện ra ngoài Trang Chủ)</label>
+                   </div>
+                   <div className="form-group" style={{gridColumn: '1 / span 2'}}>
+                     <label>Upload Ảnh (từ Máy Tính):</label>
+                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                       <input type="file" accept="image/*" onChange={handleImageUpload} style={{flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '8px', background: '#f9f9f9'}}/>
+                       <input value={editForm.image} onChange={(e) => setEditForm({...editForm, image: e.target.value})} placeholder="Hoặc sửa URL ảnh" style={{flex: 2, padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/>
+                       {editForm.image && <img src={editForm.image} alt="preview" style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '5px'}} />}
+                     </div>
+                   </div>
                    <div className="form-group" style={{gridColumn: '1 / span 2'}}><label>Mô tả:</label><textarea value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', minHeight: '80px'}} /></div>
                  </>
-               ) : (
+               ) : editType === 'blog' ? (
                  <>
                    <div className="form-group" style={{gridColumn: '1 / span 2'}}><label>Tiêu đề bài viết:</label><input value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
-                   <div className="form-group" style={{gridColumn: '1 / span 2'}}><label>Ảnh đại diện (URL):</label><input value={editForm.image} onChange={(e) => setEditForm({...editForm, image: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
+                   <div className="form-group" style={{gridColumn: '1 / span 2'}}>
+                     <label>Upload Ảnh (từ Máy Tính):</label>
+                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                       <input type="file" accept="image/*" onChange={handleImageUpload} style={{flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '8px', background: '#f9f9f9'}}/>
+                       <input value={editForm.image} onChange={(e) => setEditForm({...editForm, image: e.target.value})} placeholder="Hoặc sửa URL ảnh" style={{flex: 2, padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/>
+                       {editForm.image && <img src={editForm.image} alt="preview" style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '5px'}} />}
+                     </div>
+                   </div>
                    <div className="form-group" style={{gridColumn: '1 / span 2'}}><label>Mô tả ngắn (Excerpt):</label><textarea value={editForm.excerpt} onChange={(e) => setEditForm({...editForm, excerpt: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', minHeight: '60px'}} /></div>
                    <div className="form-group" style={{gridColumn: '1 / span 2'}}><label>Nội dung chi tiết:</label><textarea value={editForm.content} onChange={(e) => setEditForm({...editForm, content: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', minHeight: '200px'}} /></div>
                  </>
-               )}
+               ) : editType === 'promo' ? (
+                 <>
+                   <div className="form-group" style={{gridColumn: '1 / span 2'}}><label>Tiêu đề siêu to:</label><input value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
+                   <div className="form-group"><label>Nhãn dán góc ảnh (VD: Ưu đãi 50%):</label><input value={editForm.badge} onChange={(e) => setEditForm({...editForm, badge: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/></div>
+                   <div className="form-group" style={{gridColumn: '1 / span 2'}}>
+                     <label>Upload Ảnh Banner:</label>
+                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                       <input type="file" accept="image/*" onChange={handleImageUpload} style={{flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: '8px', background: '#f9f9f9'}}/>
+                       <input value={editForm.image} onChange={(e) => setEditForm({...editForm, image: e.target.value})} placeholder="Hoặc dán URL" style={{flex: 2, padding: '10px', border: '1px solid #ddd', borderRadius: '8px'}}/>
+                       {editForm.image && <img src={editForm.image} alt="preview" style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '5px'}} />}
+                     </div>
+                   </div>
+                   <div className="form-group" style={{gridColumn: '1 / span 2'}}><label>Lời mời gọi hấp dẫn (Mô tả):</label><textarea value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', minHeight: '120px'}} /></div>
+                 </>
+               ) : null}
             </div>
 
             <div style={{marginTop: '2.5rem', display: 'flex', gap: '15px'}}>

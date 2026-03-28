@@ -1,23 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { formatPrice } from '../data';
-import { Filter, Search } from 'lucide-react';
-
-const ProductCard = ({ product, addToCart }) => (
-  <div className="product-card">
-    <Link to={`/product/${product.id}`}>
-      <img src={product.image} alt={product.name} className="product-img" />
-    </Link>
-    <div className="product-info">
-      <h3>{product.name}</h3>
-      <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem'}}>{product.type}</p>
-      <p className="product-price">{formatPrice(product.price)}</p>
-      <button className="btn btn-primary" onClick={() => addToCart(product)} style={{width: '100%'}}>
-        Thêm Vào Giỏ
-      </button>
-    </div>
-  </div>
-);
+import { Search } from 'lucide-react';
+import ProductCard from '../components/ProductCard';
+import SectionTitle from '../components/SectionTitle';
 
 export default function Products({ products, addToCart }) {
   const location = useLocation();
@@ -26,13 +12,9 @@ export default function Products({ products, addToCart }) {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const type = params.get('type');
-    if (type) {
-      setFilter(type);
-    } else {
-      setFilter('All');
-    }
-  }, [location]);
+    const type = params.get('type') || 'All';
+    setFilter(prev => prev !== type ? type : prev);
+  }, [location.search]);
   
   const types = ['All', ...new Set(products.map(p => p.type))];
   
@@ -42,21 +24,16 @@ export default function Products({ products, addToCart }) {
     return matchesFilter && matchesSearch;
   });
 
-  const getLabel = (t) => {
-    if (t === 'All') return 'Toàn Bộ Sản Phẩm';
-    return t;
-  };
+  const getLabel = (t) => (t === 'All' ? 'Toàn Bộ Sản Phẩm' : t);
 
   return (
-    <div className="container" style={{paddingTop: '3rem'}}>
-      <div className="section-title">
-        <h2>Sản Phẩm</h2>
-      </div>
+    <div className="container" style={{ padding: '60px 0' }}>
+      <SectionTitle title="Sản Phẩm" />
 
-      <div style={{maxWidth: '600px', margin: '0 auto 2.5rem', position: 'relative'}}>
+      <div className="search-input-wrapper">
         <input 
           type="text" 
-          placeholder="Tìm kiếm sản phẩm..." 
+          placeholder="Bạn đang tìm kiếm trà gì?..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
@@ -64,13 +41,13 @@ export default function Products({ products, addToCart }) {
         <Search className="search-icon-inside" size={20} />
       </div>
       
-      <div style={{display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '3rem'}}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '3rem' }}>
         {types.map(t => (
           <button 
             key={t}
             onClick={() => setFilter(t)}
             className={`btn ${filter === t ? 'btn-primary' : 'btn-outline'}`}
-            style={{padding: '8px 16px'}}
+            style={{ padding: '10px 24px', borderRadius: '30px' }}
           >
             {getLabel(t)}
           </button>
@@ -80,38 +57,23 @@ export default function Products({ products, addToCart }) {
       {filteredProducts.length > 0 ? (
         <div className="products-grid">
           {filteredProducts.map(product => (
-            <ProductCard key={product.id} product={product} addToCart={addToCart} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              addToCart={addToCart} 
+              formatPrice={formatPrice} 
+            />
           ))}
         </div>
       ) : (
-        <div style={{textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)'}}>
+        <div style={{ textAlign: 'center', padding: '5rem 0', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.3 }}>🍵</div>
           <h3>Không tìm thấy sản phẩm nào phù hợp với "{searchTerm}"</h3>
+          <button className="btn btn-outline" onClick={() => {setSearchTerm(''); setFilter('All');}} style={{ marginTop: '20px' }}>
+            Xem lại tất cả sản phẩm
+          </button>
         </div>
       )}
-
-      <style>{`
-        .search-input {
-          width: 100%;
-          padding: 12px 20px 12px 45px;
-          border: 1px solid var(--border);
-          border-radius: 50px;
-          font-size: 1rem;
-          outline: none;
-          transition: border-color 0.3s, box-shadow 0.3s;
-          background: var(--bg-dark);
-        }
-        .search-input:focus {
-          border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
-        }
-        .search-icon-inside {
-          position: absolute;
-          left: 15px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--text-muted);
-        }
-      `}</style>
     </div>
   );
 }

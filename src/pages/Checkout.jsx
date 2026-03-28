@@ -69,6 +69,13 @@ export default function Checkout({ cartItems, setCartItems }) {
       const newOrder = await database.addOrder(order);
       setOrderId(newOrder.id);
 
+      // Tự động trừ tồn kho (auto-decrement stock) cho mỗi sản phẩm được mua
+      try {
+        await Promise.all(cartItems.map(item => database.decreaseProductStock(item.id, item.quantity)));
+      } catch (stockErr) {
+        console.error("Lỗi cập nhật tồn kho:", stockErr);
+      }
+
       if (formData.paymentMethod === 'bank_transfer') {
         setShowQR(true);
       } else {

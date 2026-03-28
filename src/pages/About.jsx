@@ -4,26 +4,42 @@ export default function About() {
   return (
     <div className="container" style={{paddingTop: '3rem', paddingBottom: '5rem'}}>
       <div className="section-title">
-        <h2>Về Thưởng Trà Quán</h2>
+        <h2>Búp Trà Tuấn Hiền</h2>
       </div>
 
       <div className="about-grid">
         <div style={{paddingRight: '2rem'}}>
-          <h3 style={{fontSize: '2rem', marginBottom: '1.5rem'}}>Hành Trình Gìn Giữ Hương Trà Việt</h3>
-          <p style={{marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-muted)'}}>
-            Ra đời từ tình yêu với nền văn hóa thưởng mộc mạc mà tinh tế của người Việt, Thưởng Trà Quán tự hào mang đến những phẩm trà trứ danh từ các vùng trồng chè nổi tiếng thế giới của Việt Nam.
-          </p>
-          <p style={{marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-muted)'}}>
-            Từ Thái Nguyên bạt ngàn với những đồi chè xanh mướt, Mộc Châu bốn mùa sương phủ lãng mạn, đến những cây trà cổ thụ Shan Tuyết hàng trăm năm tuổi tại Hà Giang... Mỗi búp trà chúng tôi chọn lọc đều mang trong mình hơi thở của đất trời và tâm huyết của người nông dân.
-          </p>
-          <ul style={{marginTop: '2rem'}}>
-            <li style={{marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '10px'}}><span style={{color: 'var(--accent)'}}>✔</span> Lá trà tươi sạch 100%</li>
-            <li style={{marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '10px'}}><span style={{color: 'var(--accent)'}}>✔</span> Quy trình chế biến thủ công giữ trọn vị nguyên bản</li>
-            <li style={{marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '10px'}}><span style={{color: 'var(--accent)'}}>✔</span> Cam kết không chất bảo quản, không hương liệu hóa học</li>
-          </ul>
+          <h3 style={{fontSize: '2rem', marginBottom: '1.5rem', color: 'var(--primary)'}}>NGƯỜI ĐI TÌM TRÀ NGON NHẤT</h3>
+          <div style={{marginBottom: '1rem', fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: '1.9', fontStyle: 'italic'}}>
+            <p style={{marginBottom: '0.8rem'}}>Có một người đàn ông dành cả đời đi tìm loại trà ngon nhất.</p>
+            <p style={{marginBottom: '0.8rem'}}>
+              Ông đi khắp nơi:<br/>
+              từ núi cao, rừng sâu,<br/>
+              gặp những người làm trà nổi tiếng nhất.
+            </p>
+            <p style={{marginBottom: '0.8rem'}}>Nhưng ông vẫn không hài lòng.</p>
+            <p style={{marginBottom: '0.8rem'}}>
+              Một ngày nọ,<br/>
+              ông ghé vào một ngôi nhà nhỏ ven đường.<br/>
+              Một bà cụ rót cho ông một chén trà.
+            </p>
+            <p style={{marginBottom: '0.8rem'}}>
+              Không phải trà quý.<br/>
+              Không phải trà đắt.
+            </p>
+            <p style={{marginBottom: '0.8rem'}}>
+              Nhưng khi uống… ông dừng lại.<br/>
+              <span style={{color: 'var(--primary)', fontWeight: 'bold'}}>&ldquo;Đây chính là loại trà tôi tìm cả đời.&rdquo;</span>
+            </p>
+            <p>
+              Bà cụ chỉ cười:<br/>
+              <span style={{color: 'var(--accent)', fontWeight: 'bold'}}>&ldquo;Không phải trà ngon hơn…<br/>
+              mà là hôm nay ông biết cách uống rồi.&rdquo;</span>
+            </p>
+          </div>
         </div>
         <div>
-          <img src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=1200" alt="Vườn Trà" className="about-img" />
+          <img src={`${import.meta.env.BASE_URL}cau-chuyen-tra.jpg`} alt="Người đi tìm trà" className="about-img" style={{ boxShadow: '0 15px 40px rgba(0,0,0,0.15)', border: '4px solid white', borderRadius: '15px' }} />
         </div>
       </div>
 

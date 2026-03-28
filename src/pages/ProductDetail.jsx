@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { formatPrice } from '../data';
-import { ShoppingCart, ArrowLeft, Truck, ShieldCheck, Clock } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Truck, ShieldCheck } from 'lucide-react';
 
 export default function ProductDetail({ products, addToCart }) {
   const { id } = useParams();
@@ -12,8 +12,9 @@ export default function ProductDetail({ products, addToCart }) {
   if (!product) {
     return (
       <div className="container" style={{ textAlign: 'center', padding: '100px 0' }}>
-        <h2>Sản phẩm không tồn tại</h2>
-        <Link to="/products" className="btn btn-primary">Quay lại cửa hàng</Link>
+        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔍</div>
+        <h2>Sản phẩm không tìm thấy</h2>
+        <Link to="/products" className="btn btn-primary" style={{ marginTop: '20px' }}>Quay lại cửa hàng</Link>
       </div>
     );
   }
@@ -24,76 +25,95 @@ export default function ProductDetail({ products, addToCart }) {
     setTimeout(() => setAdded(false), 2000);
   };
 
+  const benefits = product.health_benefits || product.healthBenefits || [];
+
   return (
-    <div className="container" style={{ paddingTop: '100px', paddingBottom: '50px' }}>
-      <Link to="/products" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', marginBottom: '30px', textDecoration: 'none', fontWeight: 'bold' }}>
-        <ArrowLeft size={20} /> Quay lại
+    <div className="container" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
+      <Link to="/products" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '40px', border: 'none', padding: 0 }}>
+        <ArrowLeft size={18} /> Quay lại cửa hàng
       </Link>
 
-      <div className="row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '50px' }}>
+      <div className="product-detail-grid">
         <div className="product-image">
-          <img src={product.image} alt={product.name} style={{ width: '100%', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', objectFit: 'cover', aspectRatio: '1/1' }} />
+          <img 
+            src={product.image} 
+            alt={product.name} 
+            style={{ width: '100%', borderRadius: '32px', boxShadow: '0 30px 60px rgba(0,0,0,0.12)', aspectRatio: '1/1', objectFit: 'cover' }} 
+          />
         </div>
 
-        <div className="product-info">
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-            <span style={{ background: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: '50px', fontSize: '0.8rem' }}>{product.type}</span>
-            {product.bestseller && <span style={{ background: 'var(--accent)', color: 'white', padding: '4px 12px', borderRadius: '50px', fontSize: '0.8rem' }}>Bán chạy</span>}
+        <div className="product-info-panel">
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <span className="badge badge-primary">{product.type}</span>
+            {product.bestseller && <span className="badge badge-accent">Bán chạy</span>}
           </div>
           
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{product.name}</h1>
-          <p style={{ color: '#666', marginBottom: '20px' }}>{product.origin}</p>
-          <p style={{ fontSize: '2rem', color: 'var(--accent)', fontWeight: 'bold', marginBottom: '30px' }}>{formatPrice(product.price)}</p>
+          <h1 style={{ fontSize: '3rem', marginBottom: '10px', color: 'var(--primary)' }}>{product.name}</h1>
+          <p style={{ color: '#888', marginBottom: '25px', fontSize: '1.1rem' }}>Nguồn gốc: {product.origin}</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '15px', marginBottom: '35px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '2.5rem', color: 'var(--accent)', fontWeight: 800 }}>{formatPrice(product.price)}</span>
+            {product.originalPrice > product.price && (
+               <span style={{ fontSize: '1.3rem', color: '#aaa', textDecoration: 'line-through' }}>{formatPrice(product.originalPrice)}</span>
+            )}
+            {product.originalPrice > product.price && (
+               <span style={{ background: '#ffebee', color: '#d32f2f', padding: '4px 10px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem', verticalAlign: 'middle' }}>
+                 Giảm {Math.round((1 - product.price / product.originalPrice) * 100)}%
+               </span>
+            )}
+            <span style={{ color: '#999', fontSize: '1rem' }}>/ Gói</span>
+          </div>
           
-          <div style={{ marginBottom: '30px' }}>
-             <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Mô tả sản phẩm:</p>
-             <p style={{ color: '#444', lineHeight: '1.8' }}>{product.description}</p>
+          <div style={{ marginBottom: '40px' }}>
+             <p style={{ fontWeight: 700, marginBottom: '12px', fontSize: '1.1rem' }}>Mô tả sản phẩm:</p>
+             <p style={{ color: '#555', lineHeight: '1.8' }}>{product.description}</p>
           </div>
 
-          <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '15px', marginBottom: '30px' }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Công dụng:</p>
-            <ul style={{ paddingLeft: '20px', color: '#444' }}>
-              {(product.health_benefits || product.healthBenefits || []).map((benefit, idx) => (
-                <li key={idx} style={{ marginBottom: '5px' }}>{benefit}</li>
-              ))}
-            </ul>
-          </div>
+          {benefits.length > 0 && (
+            <div style={{ background: 'var(--bg-dark)', padding: '25px', borderRadius: '24px', marginBottom: '40px', border: '1px solid var(--border)' }}>
+              <p style={{ fontWeight: 700, marginBottom: '15px' }}>Công dụng nổi bật:</p>
+              <ul style={{ paddingLeft: '0', listStyle: 'none', margin: 0 }}>
+                {benefits.map((benefit, idx) => (
+                  <li key={idx} style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px', color: '#555' }}>
+                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>•</span> {benefit}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          {/* Quantity Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
-            <span style={{ fontWeight: 'bold' }}>Số lượng:</span>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: '10px', overflow: 'hidden' }}>
-              <button 
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                style={{ background: 'white', border: 'none', padding: '10px 15px', cursor: 'pointer', borderRight: '1px solid #ddd' }}
-              >-</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '25px', marginBottom: '30px' }}>
+            <div className="quantity-selector">
+              <button className="quantity-btn" onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
               <input 
+                className="quantity-input"
                 type="number" 
                 value={quantity} 
                 onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                style={{ width: '50px', textAlign: 'center', border: 'none', outline: 'none', fontWeight: 'bold' }} 
               />
-              <button 
-                onClick={() => setQuantity(quantity + 1)}
-                style={{ background: 'white', border: 'none', padding: '10px 15px', cursor: 'pointer', borderLeft: '1px solid #ddd' }}
-              >+</button>
+              <button className="quantity-btn" onClick={() => setQuantity(quantity + 1)}>+</button>
             </div>
+
+            <button 
+              className="btn btn-primary" 
+              onClick={handleAddToCart}
+              style={{ flex: 1, padding: '18px', borderRadius: '15px', fontWeight: 600, fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}
+            >
+              <ShoppingCart size={20} /> {added ? 'ĐÃ THÊM VÀO GIỎ!' : 'THÊM VÀO GIỎ HÀNG'}
+            </button>
           </div>
 
-          <button 
-            className="btn btn-primary" 
-            onClick={handleAddToCart}
-            style={{ width: '100%', height: '56px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-          >
-            <ShoppingCart /> {added ? 'Đã thêm vào giỏ!' : 'Thêm vào giỏ hàng'}
-          </button>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '40px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#666' }}>
-              <Truck size={18} color="var(--primary)" /> Giao hàng toàn quốc
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', paddingTop: '30px', borderTop: '1px solid #eee' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.95rem', color: '#666' }}>
+              <div style={{ background: '#e8f5e9', padding: '10px', borderRadius: '12px' }}>
+                <Truck size={20} color="var(--primary)" />
+              </div>
+              Giao hàng toàn quốc
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#666' }}>
-              <ShieldCheck size={18} color="var(--primary)" /> Đảm bảo chất lượng
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.95rem', color: '#666' }}>
+              <div style={{ background: '#e8f5e9', padding: '10px', borderRadius: '12px' }}>
+                <ShieldCheck size={20} color="var(--primary)" />
+              </div>
+              Cam kết ATVSTP
             </div>
           </div>
         </div>

@@ -1,50 +1,56 @@
-# PLAN: Tối ưu chức năng thanh toán
+# PLAN: Refactor Giao diện & Tái cấu trúc Hệ thống
 
 ## 📋 Mô tả nhiệm vụ
-Tối ưu hóa quy trình thanh toán hiện tại (`Checkout.jsx`) để đảm bảo trải nghiệm người dùng (UX) mượt mà, hiệu suất (Performance) tốt hơn khi kiểm tra trạng thái thanh toán và bảo mật (Security) cao hơn.
+Tái cấu trúc (Refactor) toàn bộ mã nguồn frontend để tăng khả năng bảo trì, mở rộng mà vẫn **giữ nguyên Style (phong cách), Màu sắc (Palette) và Logo** của "Búp Trà Tuấn Hiền".
 
 ---
 
 ## 🤖 Các Agent tham gia & Vai trò
 
-| Agent | Vai trò |
-|-------|---------|
-| `project-planner` | Lập kế hoạch, phân chia nhiệm vụ |
-| `frontend-specialist` | Tối ưu UI/UX, Validation form, Hiệu ứng chuyển cảnh |
-| `backend-specialist` | Tối ưu logic polling (truy vấn theo ID), Cải thiện `supabase.js` |
-| `security-auditor` | Kiểm tra bảo mật dữ liệu khách hàng, Sanitize input |
-| `test-engineer` | Kiểm tra luồng thanh toán, giả lập trạng thái thanh toán |
+| Agent | Vai trò | Trực thuộc |
+|-------|---------|------------|
+| `project-planner` | Lập kế hoạch phân rã component | `orchestrate` |
+| `frontend-specialist` | Tái cấu trúc JSX/CSS, Tách file | `frontend-design` |
+| `clean-code` | Đảm bảo mã nguồn gọn gàng, chuẩn SRP | `clean-code` |
+| `performance-optimizer` | Tối ưu hóa render & image loading | `performance-profiling` |
+| `test-engineer` | Chạy Lint và kiểm tra luồng hoạt động | `testing-patterns` |
 
 ---
 
 ## 🛠️ Các giai đoạn thực hiện
 
-### Giai đoạn 1: Phân tích & Tối ưu Foundation (`backend-specialist`, `security-auditor`)
-1. **Supabase Optimization**: Thêm hàm `getOrderById(id)` vào `supabase.js` để tránh fetch toàn bộ danh sách orders.
-2. **Security Audit**: Kiểm tra cách lưu trữ và truyền tải dữ liệu khách hàng. Đảm bảo input được lọc kỹ.
-3. **Polling Logic**: Chuyển đổi từ polling toàn bộ sang polling theo `orderId` trong `Checkout.jsx`.
+### Giai đoạn 1: Phân rã Component Layout (`project-planner`, `clean-code`)
+1. **Tách Header & Footer**: Chuyển các component này từ `App.jsx` sang các file riêng biệt trong `src/components/`.
+2. **Component Hóa Common UI**:
+   - `SectionTitle.jsx`: Tiêu đề từng phần.
+   - `ProductCard.jsx`: Thẻ sản phẩm dùng chung cho Home & Products.
+   - `PaymentOption.jsx`: Tách riêng các option thanh toán.
+   - `PromoPopup.jsx`: (Đã có, cần kiểm tra lại).
 
-### Giai đoạn 2: Nâng cấp Giao diện & Trải nghiệm (`frontend-specialist`)
-1. **Form Validation**: Thêm regex cho số điện thoại, kiểm tra độ dài địa chỉ, hiển thị lỗi trực quan.
-2. **UX Flow**: Thêm hiệu ứng "Skeleton loading" hoặc "Progress bar" khi chờ thanh toán.
-3. **VietQR Enhancement**: Cải thiện hiển thị QR, thêm nút "Tôi đã chuyển khoản" để trigger check ngay lập tức thay vì chỉ chờ 5s.
-4. **Responsive**: Đảm bảo thanh toán trên Mobile cực kỳ dễ dàng.
+### Giai đoạn 2: Tối ưu hóa CSS & Inline Styles (`frontend-specialist`)
+1. **Utility & Component CSS**: Chuyển các inline styles lặp đi lặp lại sang các class trong `index.css`.
+2. **CSS Variables**: Triệt để sử dụng các biến `--primary`, `--accent` để đảm bảo tính nhất quán nếu sau này muốn thay đổi theme.
+3. **BEM-ish naming**: Áp dụng quy tắc đặt tên class để code CSS trong `index.css` dễ đọc hơn.
 
-### Giai đoạn 3: Kiểm thử & Hoàn thiện (`test-engineer`, `any`)
-1. **Unit Test**: Test các case nhập liệu sai, case giỏ hàng trống.
-2. **Integration Test**: Test luồng đặt hàng -> tạo order -> hiển thị QR -> xác nhận thanh toán.
-3. **Performance Check**: Đo lường thời gian phản hồi của polling.
-4. **Final Check**: Run `security_scan.py` và `lint_runner.py`.
+### Giai đoạn 3: Phân tán Logic Trang (`frontend-specialist`)
+1. **App.jsx Clean-up**: Rút gọn file `App.jsx`, chỉ để lại Routing và cấu trúc Layout chính.
+2. **Page Logic Isolation**: Chuyển các logic xử lý dữ liệu (fetchProducts, cart logic...) sang các hook hoặc file chuyên biệt nếu cần thiết.
+
+### Giai đoạn 4: Hoàn thiện & Kiểm thử (`test-engineer`)
+1. **Linting Check**: Fix toàn bộ các lỗi Lint (bao gồm 9 lỗi đã được phát hiện ở bước trước).
+2. **Responsive Check**: Đảm bảo sau khi refactor, giao diện vẫn chuẩn trên Mobile (breakpoints).
+3. **Final Audit**: Chạy `checklist.py`.
 
 ---
 
 ## 📅 KPI Hoàn thành
-- [ ] Hàm `getOrderById` được sử dụng thay thế `getOrders().find()`.
-- [ ] Không còn lỗi bypass validation form.
-- [ ] Giao diện QR chuyên nghiệp hơn, có feedback rõ ràng cho người dùng.
-- [ ] Script `security_scan.py` đạt kết quả Pass.
+- [ ] Số dòng code trong `App.jsx` giảm ít nhất 50%.
+- [ ] Không còn inline styles trùng lặp trong ProductDetail hay Checkout.
+- [ ] 100% các lỗi Lint hiện tại được xử lý.
+- [ ] Giữ nguyên cảm giác "Trà Búp Tuấn Hiền" hiện tại (Trải nghiệm người dùng không bị sốc).
 
 ---
 
-## ⏸️ CHECKPOINT: Đang chờ phê duyệt từ người dùng
-Vui lòng xem qua kế hoạch trên. Nếu bạn đồng ý, hãy phản hồi "Y" để tôi bắt đầu triển khai các Agent song song.
+## ⏸️ CHECKPOINT: Xác nhận triển khai
+Kế hoạch này sẽ thay đổi khá nhiều file (multi-file restructure).
+Nếu bạn đồng ý, hãy phản hồi **"Y"** để tôi thực hiện theo đúng triết lý của `@[orchestrate]`.

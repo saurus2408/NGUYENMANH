@@ -44,6 +44,24 @@ export const database = {
     if (error) throw error
   },
 
+  async decreaseProductStock(id, qty) {
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('stock')
+      .eq('id', id)
+      .single()
+    if (fetchError) throw fetchError
+    
+    const newStock = Math.max(0, product.stock - qty)
+    
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({ stock: newStock })
+      .eq('id', id)
+      
+    if (updateError) throw updateError
+  },
+
   // Orders
   async getOrders() {
     const { data, error } = await supabase
@@ -81,6 +99,14 @@ export const database = {
     const { error } = await supabase
       .from('orders')
       .update({ status })
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  async deleteOrder(id) {
+    const { error } = await supabase
+      .from('orders')
+      .delete()
       .eq('id', id)
     if (error) throw error
   },
@@ -141,6 +167,42 @@ export const database = {
   async deleteBlogPost(id) {
     const { error } = await supabase
       .from('blog')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  // Promotions
+  async getPromotions() {
+    const { data, error } = await supabase
+      .from('promotions')
+      .select('*')
+      .order('id', { ascending: false })
+    if (error) return []
+    return data
+  },
+
+  async addPromotion(promo) {
+    const { data, error } = await supabase
+      .from('promotions')
+      .insert([promo])
+      .select()
+    if (error) throw error
+    return data[0]
+  },
+
+  async updatePromotion(id, updates) {
+    const { data, error } = await supabase
+      .from('promotions')
+      .update(updates)
+      .eq('id', id)
+    if (error) throw error
+    return data
+  },
+
+  async deletePromotion(id) {
+    const { error } = await supabase
+      .from('promotions')
       .delete()
       .eq('id', id)
     if (error) throw error
